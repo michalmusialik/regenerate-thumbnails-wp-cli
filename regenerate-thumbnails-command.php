@@ -28,6 +28,9 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
       WP_CLI::error( "No images found in database." );
     }
 
+    // Start timer
+    $timer_start = microtime(true);
+
     // Handle all images
     $count = count($images);
     $current = 1;
@@ -36,6 +39,12 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
       $this->handle_image( $image );
       $current++;
     }
+
+    // Display total time taken
+    $time_taken = microtime(true) - $timer_start;
+    $time_taken = number_format( $time_taken, 3 );
+    WP_CLI::line();
+    WP_CLI::success( "Handled $count images in $time_taken seconds" );
 
   }
 
