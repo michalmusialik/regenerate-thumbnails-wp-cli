@@ -24,18 +24,17 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
     $images = $wpdb->get_results("SELECT ID FROM $wpdb->posts WHERE post_type = 'attachment' AND post_mime_type LIKE 'image/%' ORDER BY ID ASC");
 
     // Check if query returned any images.
-    if ( $images ) {
-      // Echo image count
-      $count = count($images);
-      WP_CLI::success( "$count images found." );  
-    } else {
-      // Echo error and abort
+    if ( !$images ) {
       WP_CLI::error( "No images found in database." );
     }
 
     // Handle all images
+    $count = count($images);
+    $current = 1;
     foreach ( $images as $image ) {
+      WP_CLI::line( "\nHandling image with id: $image->ID ($current out of $count)" );
       $this->handle_image( $image );
+      $current++;
     }
 
   }
@@ -47,8 +46,6 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
 
     // Get the image file path
     $image_path = get_attached_file( $image->ID );
-
-    WP_CLI::line( "\nHandling image with id: $image->ID" );
 
     // Check if file exists
     if ( !file_exists( $image_path ) ) {
@@ -63,25 +60,9 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
     // Get the filename
     $file_info = pathinfo( $image_path );
 
-    // Open the directory
-    $dir_handle = opendir( $file_info['dirname'] );
-    if ( !$dir_handle ) {
-      WP_CLI::line( " Couldn't open the directory." );
-      return;
-    }
+    WP_CLI::line( " Filename: " . $file_info['filename'] );
 
-    // Look for thumbnails of the image
-    $thumbnails = array();
-    while ( false !== ( $entry = readdir( $dir_handle ) ) ) {
-      if ( $entry != "." && $entry != ".." ) {
-        // Check if entry is a thumbnail of this image
-        $pattern = '(' . $file_info['filename'] . ')(-)(\\d+)(x)(\\d+)';
-        if ( preg_match ( "/".$pattern."/is" , $entry ) === 1 ) {
-          $thumbnails[] = $entry;
-        }
-      }
-    }
-    closedir( $dir_handle );
+    $thumbnails = $this->find_thumbnails( $image_path );
 
     // If no thumbnails found
     if ( !$thumbnails ) {
@@ -98,9 +79,9 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
       // Try to delete the thumbnail file
       if ( unlink( $thumbnail_path ) ) {
       // if ( true ) {
-        $deleted .= " " . str_replace( $file_info['filename'] . '-', '', $thumbnail );
+        $deleted .= " " . $thumbnail;
       } else {
-        $failed .= " " . str_replace( $file_info['filename'] . '-', '', $thumbnail );
+        $failed .= " " . $thumbnail;
       }
     }
     
@@ -135,6 +116,31 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
     /* 
      * Verify that thumbnails are regenerated
      */
+    $thumbnails = $this->find_thumbnails( $image_path );
+
+    $created = "";
+    foreach ( $thumbnails as $thumbnail ) {
+      // Get the full thumbnail file path
+      $thumbnail_path = $file_info['dirname'] . '/' . $thumbnail;
+      $created .= $thumbnail;
+    }
+
+    if ( "" !== $created ) {
+      WP_CLI::line( " Created: $created in " . number_format( $time_taken, 3 ) . " seconds" );
+    } else {
+      WP_CLI::line( " Thumbnails were not created for unknonw reason." );
+    }
+
+  }
+
+  /*
+   * Scans a directory for thumbnails of an image
+   * @param image_path - full path of the image file
+   * @return array - array of string filenames
+   */
+  private function find_thumbnails( $image_path ) {
+
+    $file_info = pathinfo( $image_path );
 
     // Open the directory
     $dir_handle = opendir( $file_info['dirname'] );
@@ -149,25 +155,13 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
       if ( $entry != "." && $entry != ".." ) {
         // Check if entry is a thumbnail of this image
         $pattern = '(' . $file_info['filename'] . ')(-)(\\d+)(x)(\\d+)';
-        if ( preg_match ( "/".$pattern."/is" , $entry ) === 1 ) {
+        if ( preg_match ( "/^".$pattern."/is" , $entry ) === 1 ) {
           $thumbnails[] = $entry;
         }
       }
     }
     closedir( $dir_handle );
 
-    $created = "";
-    foreach ( $thumbnails as $thumbnail ) {
-      // Get the full thumbnail file path
-      $thumbnail_path = $file_info['dirname'] . '/' . $thumbnail;
-      $created .= " " . str_replace( $file_info['filename'] . '-', '', $thumbnail );
-    }
-
-    if ( "" !== $created ) {
-      WP_CLI::line( " Created:" . $created );
-    } else {
-      WP_CLI::line( " Thumbnails were not created for unknonw reason." );
-    }
-
+    return $thumbnails;
   }
 }
