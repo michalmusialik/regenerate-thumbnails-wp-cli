@@ -83,6 +83,11 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
     }
     closedir( $dir_handle );
 
+    // If no thumbnails found
+    if ( !$thumbnails ) {
+      WP_CLI::line( " No thumbnails found." );
+    }
+
     // Delete the thumbnails
     $deleted = "";
     $failed = "";
@@ -112,5 +117,57 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
     /*
      * Regenerate thumbnails for this image
      */
+
+    // Start timer
+    $timer_start = microtime(true);
+
+    $image_meta = wp_generate_attachment_metadata( $image->ID, $image_path );
+    if ( is_wp_error( $image_meta ) ) {
+      WP_CLI::line( " " . $image_meta->get_error_message() );
+    }
+    if ( empty( $image_meta ) ) {
+      WP_CLI::line( " Unknown error when regenerating thumbnails" );
+    }
+    wp_update_attachment_metadata( $image->ID, $image_meta );
+
+    $time_taken = microtime(true) - $timer_start;
+
+    /* 
+     * Verify that thumbnails are regenerated
+     */
+
+    // Open the directory
+    $dir_handle = opendir( $file_info['dirname'] );
+    if ( !$dir_handle ) {
+      WP_CLI::line( " Couldn't open the directory." );
+      return;
+    }
+
+    // Look for thumbnails of the image
+    $thumbnails = array();
+    while ( false !== ( $entry = readdir( $dir_handle ) ) ) {
+      if ( $entry != "." && $entry != ".." ) {
+        // Check if entry is a thumbnail of this image
+        $pattern = '(' . $file_info['filename'] . ')(-)(\\d+)(x)(\\d+)';
+        if ( preg_match ( "/".$pattern."/is" , $entry ) === 1 ) {
+          $thumbnails[] = $entry;
+        }
+      }
+    }
+    closedir( $dir_handle );
+
+    $created = "";
+    foreach ( $thumbnails as $thumbnail ) {
+      // Get the full thumbnail file path
+      $thumbnail_path = $file_info['dirname'] . '/' . $thumbnail;
+      $created .= " " . str_replace( $file_info['filename'] . '-', '', $thumbnail );
+    }
+
+    if ( "" !== $created ) {
+      WP_CLI::line( " Created:" . $created );
+    } else {
+      WP_CLI::line( " Thumbnails were not created for unknonw reason." );
+    }
+
   }
 }
