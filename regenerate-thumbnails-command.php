@@ -1,30 +1,23 @@
 <?php
 
-WP_CLI::add_command( 'example', 'Example_Command' );
+WP_CLI::add_command( 'regenerate-thumbnails', 'Regenerate_Thumbnails_Command' );
 
 /**
- * Implements example command.
+ * Regenerates thumbnails.
  */
-class Example_Command extends WP_CLI_Command {
+class Regenerate_Thumbnails_Command extends WP_CLI_Command {
 
     /**
-     * Prints a greeting.
-     * 
-     * ## OPTIONS
-     * 
-     * <name>
-     * : The name of the person to greet.
+     * Regenerates all thumbnails.
      * 
      * ## EXAMPLES
      * 
-     *     wp example hello Newman
+     *     wp regenerate-thumbnails all
      *
-     * @synopsis <name>
      */
-    function hello( $args, $assoc_args ) {
-        list( $name ) = $args;
+    function all( $args, $assoc_args ) {
 
         // Print a success message
-        WP_CLI::success( "Hello, $name!" );
+        WP_CLI::success( "It works!" );
     }
 }
