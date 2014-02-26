@@ -53,48 +53,34 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
       return;
     }
 
+    // Get the file info
+    $file_info = pathinfo( $image_path );
+
     /*
      * Delete all thumbnail files
      */
-
-    // Get the filename
-    $file_info = pathinfo( $image_path );
-
-    WP_CLI::line( " Filename: " . $file_info['filename'] );
+    WP_CLI::line( " Filename: " . $file_info['basename'] );
 
     $thumbnails = $this->find_thumbnails( $image_path );
 
     // If no thumbnails found
-    if ( !$thumbnails ) {
+    if ( !$thumbnails )
       WP_CLI::line( " No thumbnails found." );
-    }
 
     // Delete the thumbnails
-    $deleted = "";
-    $failed = "";
+    $deleted = $failed = 0;
     foreach ( $thumbnails as $thumbnail ) {
       // Get the full thumbnail file path
       $thumbnail_path = $file_info['dirname'] . '/' . $thumbnail;
 
       // Try to delete the thumbnail file
       if ( unlink( $thumbnail_path ) ) {
-      // if ( true ) {
-        $deleted .= " " . $thumbnail;
+        $deleted++;
       } else {
-        $failed .= " " . $thumbnail;
+        $failed++;
       }
     }
     
-    // If we managed to delete some thumbnails
-    if ( "" !== $deleted ) {
-      WP_CLI::line( " Deleted:" . $deleted );
-    }
-
-    // If we failed to delete some thumbnails
-    if ( "" !== $failed ) {
-      WP_CLI::line( " Failed to delete:" . $failed );
-    }
-
     /*
      * Regenerate thumbnails for this image
      */
@@ -117,18 +103,22 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
      * Verify that thumbnails are regenerated
      */
     $thumbnails = $this->find_thumbnails( $image_path );
+    $created = count( $thumbnails );
 
-    $created = "";
-    foreach ( $thumbnails as $thumbnail ) {
-      // Get the full thumbnail file path
-      $thumbnail_path = $file_info['dirname'] . '/' . $thumbnail;
-      $created .= $thumbnail;
-    }
+    /*
+     * Display results
+     */
 
-    if ( "" !== $created ) {
+    if ( 0 !== $deleted )
+      WP_CLI::line( " Deleted: $deleted" );
+
+    if ( 0 !== $failed )
+      WP_CLI::line( " Failed to delete: $failed" );
+
+    if ( 0 !== $created ) {
       WP_CLI::line( " Created: $created in " . number_format( $time_taken, 3 ) . " seconds" );
     } else {
-      WP_CLI::line( " Thumbnails were not created for unknonw reason." );
+      WP_CLI::line( " Thumbnails were not created for unknown reason. (perhaps the original image is too small)" );
     }
 
   }
