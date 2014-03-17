@@ -9,9 +9,9 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
 
   /**
    * Regenerates all thumbnails.
-   * 
+   *
    * ## EXAMPLES
-   * 
+   *
    *     wp regenerate-thumbnails all
    *
    */
@@ -21,7 +21,7 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
     global $wpdb;
 
     // Query the database directly to get all images
-    $images = $wpdb->get_results("SELECT ID FROM $wpdb->posts WHERE post_type = 'attachment' AND post_mime_type LIKE 'image/%' ORDER BY ID ASC");
+    $images = $wpdb->get_results("SELECT ID FROM $wpdb->posts WHERE post_type = 'attachment' AND post_mime_type LIKE 'image/%' ORDER BY ID DESC");
 
     // Check if query returned any images.
     if ( !$images ) {
@@ -89,7 +89,7 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
         $failed++;
       }
     }
-    
+
     /*
      * Regenerate thumbnails for this image
      */
@@ -108,7 +108,7 @@ class Regenerate_Thumbnails_Command extends WP_CLI_Command {
 
     $time_taken = microtime(true) - $timer_start;
 
-    /* 
+    /*
      * Verify that thumbnails are regenerated
      */
     $thumbnails = $this->find_thumbnails( $image_path );

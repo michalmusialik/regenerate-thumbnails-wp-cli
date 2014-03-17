@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name:  Regenerate thumbnails WP-CLI
-Plugin URI:   
+Plugin URI:
 Description:  This plugin adds a regenerate-thumbnails command to wp-cli. Based on Force Regenerate Thumbnails by Pedro Elsner.
 Version:      0.0.1
 Author:       Michal Musialik
